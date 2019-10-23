@@ -1,16 +1,19 @@
 package de.worldiety.autocd.docker;
 
 import de.worldiety.autocd.util.FileType;
+
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStreamWriter;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.jetbrains.annotations.Contract;
@@ -97,6 +100,18 @@ public class DockerfileHandler {
             case "vue":
                 var isNuxt = new File("nuxt.config.js").exists();
                 return isNuxt ? FileType.NUXT : FileType.VUE;
+            case "ts":
+            case "js":
+                var packageJson = new File("package.json");
+
+                try {
+                    var packStr = Files.readString(packageJson.toPath());
+                    if (packStr.contains("@kloudsoftware/eisen")) {
+                        return FileType.EISEN;
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             default:
                 return FileType.OTHER;
         }
