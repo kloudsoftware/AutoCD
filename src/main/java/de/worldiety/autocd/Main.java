@@ -64,7 +64,7 @@ public class Main {
             }
 
             return null;
-        }).orElse(Config.fromToken(environment.getK8SUrl(),
+        }).orElseGet(() -> Config.fromToken(environment.getK8SUrl(),
                 environment.getK8SUserToken()).setSslCaCert(environment.getK8SCACert()));
 
         if (client == null) {
