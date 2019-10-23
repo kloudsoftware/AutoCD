@@ -31,12 +31,14 @@ public class GithubEnvironment implements Environment {
 
     @Override
     public String getProjectName() {
-        return get(Environment.CI_PROJECT_NAME);
+        var split = get(Environment.GITHUB_REPOSITORY).split("/");
+        return split[split.length - 1];
     }
 
     @Override
     public String getProjectNamespace() {
-        return get(Environment.CI_PROJECT_NAMESPACE);
+        var split = get(Environment.GITHUB_REPOSITORY).split("/");
+        return split[split.length - 1];
     }
 
     @Override
@@ -79,8 +81,7 @@ public class GithubEnvironment implements Environment {
         CI_REGISTRY_USER,
         CI_REGISTRY_EMAIL,
         CI_REGISTRY_PASSWORD,
-        CI_PROJECT_NAME,
-        CI_PROJECT_NAMESPACE,
+        GITHUB_REPOSITORY,
         //Set for the wdy namespace
         K8S_REGISTRY_USER_TOKEN,
         K8S_REGISTRY_USER_NAME,
