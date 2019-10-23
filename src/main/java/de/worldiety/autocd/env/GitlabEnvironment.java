@@ -86,6 +86,11 @@ public class GitlabEnvironment implements Environment {
         return get(Environment.K8S_STORAGE_CLASS);
     }
 
+    @Override
+    public Optional<String> getBuildType() {
+        return Optional.ofNullable(get(Environment.BUILD_TYPE));
+    }
+
     private enum Environment {
         //Populated by the CI if environment is set in .gitlab-ci.yml
         CI_REGISTRY,
@@ -101,5 +106,6 @@ public class GitlabEnvironment implements Environment {
         KUBE_URL,
         KUBE_CA_PEM_FILE,
         AUTOCD_DOMAIN_BASE,
+        BUILD_TYPE
     }
 }

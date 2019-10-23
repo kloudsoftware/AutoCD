@@ -17,6 +17,7 @@ import io.kubernetes.client.apis.CoreV1Api;
 import io.kubernetes.client.custom.V1Patch;
 import io.kubernetes.client.util.ClientBuilder;
 import io.kubernetes.client.util.Config;
+import io.kubernetes.client.util.KubeConfig;
 import io.kubernetes.client.util.credentials.AccessTokenAuthentication;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -77,13 +78,39 @@ public class Main {
         var autoCD = getAutoCD(name, true);
         var oldAutoCD = getAutoCD("oldautocd.json", false);
         // A new API Client is created. Docker Credentials will be obtained from the Digital Oceans cluster configuration file
-        ApiClient strategicMergePatchClient = ClientBuilder.standard()
-                .setBasePath(args[0])
+        var builder = environment.getK8SConfig().map(conf -> {
+            try {
+                return ClientBuilder.kubeconfig(KubeConfig.loadKubeConfig(conf));
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            return null;
+        }).orElseGet(() -> {
+            try {
+                return ClientBuilder.standard()
+                        .setBasePath(environment.getK8SUrl())
+                        .setAuthentication(new AccessTokenAuthentication(environment.getK8SUserToken()));
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            return null;
+        });
+
+        if (null == builder) {
+            log.error("could not build merge client");
+            System.exit(-1);
+        }
+
+        ApiClient strategicMergePatchClient = builder
                 .setVerifyingSsl(true)
-                .setAuthentication(new AccessTokenAuthentication(args[1]))
                 .setOverridePatchFormat(V1Patch.PATCH_FORMAT_JSON_PATCH)
-                .build()
-                .setSslCaCert(new FileInputStream(args[2]));
+                .build();
+
+        if (environment.getK8SConfig().isEmpty()) {
+                strategicMergePatchClient.setSslCaCert(environment.getK8SCACert());
+        }
 
         var dockerCredentials = DockerconfigBuilder.getDockerConfig(
                 environment.getRegistryUrl(),
@@ -91,12 +118,7 @@ public class Main {
                 environment.getRegistryPassword()
         );
         // Determines the build Type
-        String buildType;
-        if (args.length == 4) {
-            buildType = args[BUILD_TYPE];
-        } else {
-            buildType = "dev";
-        }
+        String buildType = environment.getBuildType().orElse("dev");
 
         DockerfileHandler finder = new DockerfileHandler(".");
 

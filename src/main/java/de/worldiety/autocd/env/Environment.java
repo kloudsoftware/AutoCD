@@ -32,4 +32,6 @@ public interface Environment {
     boolean needsSecret();
 
     String getStorageClass();
+
+    Optional<String> getBuildType();
 }
