@@ -185,9 +185,11 @@ public class K8sClient {
 
         podSpec.setContainers(List.of(container));
 
-        var secret = new V1LocalObjectReference();
-        secret.setName("gitlab-bot");
-        podSpec.setImagePullSecrets(List.of(secret));
+        if (environment.needsSecret()) {
+            var secret = new V1LocalObjectReference();
+            secret.setName("gitlab-bot");
+            podSpec.setImagePullSecrets(List.of(secret));
+        }
 
 
         var dep = new V1StatefulSet();
@@ -219,7 +221,7 @@ public class K8sClient {
                 .withResources(new V1ResourceRequirementsBuilder()
                         .withRequests(Map.of("storage", new Quantity(vol.getVolumeSize())))
                         .build())
-                .withStorageClassName("do-block-storage")
+                .withStorageClassName(environment.getStorageClass())
                 .build();
     }
 
@@ -740,9 +742,11 @@ public class K8sClient {
 
         podSpec.setContainers(List.of(container));
 
-        var secret = new V1LocalObjectReference();
-        secret.setName("gitlab-bot");
-        podSpec.setImagePullSecrets(List.of(secret));
+        if (environment.needsSecret()) {
+            var secret = new V1LocalObjectReference();
+            secret.setName("gitlab-bot");
+            podSpec.setImagePullSecrets(List.of(secret));
+        }
 
         var dep = new ExtensionsV1beta1Deployment();
         dep.setMetadata(meta);

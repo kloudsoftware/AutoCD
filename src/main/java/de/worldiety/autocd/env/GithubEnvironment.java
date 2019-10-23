@@ -80,6 +80,12 @@ public class GithubEnvironment implements Environment {
         return Boolean.parseBoolean(get(Environment.K8S_SECRET_NEEDED));
     }
 
+
+    @Override
+    public String getStorageClass() {
+        return get(Environment.K8S_STORAGE_CLASS);
+    }
+
     private enum Environment {
         //Populated by the CI if environment is set in .gitlab-ci.yml
         CI_REGISTRY,
@@ -88,6 +94,7 @@ public class GithubEnvironment implements Environment {
         CI_REGISTRY_PASSWORD,
         GITHUB_REPOSITORY,
         K8S_SECRET_NEEDED,
+        K8S_STORAGE_CLASS,
         K8S_REGISTRY_USER_TOKEN,
         K8S_REGISTRY_USER_NAME,
         KUBE_URL,

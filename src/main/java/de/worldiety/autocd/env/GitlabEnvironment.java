@@ -81,6 +81,11 @@ public class GitlabEnvironment implements Environment {
         return true;
     }
 
+    @Override
+    public String getStorageClass() {
+        return get(Environment.K8S_STORAGE_CLASS);
+    }
+
     private enum Environment {
         //Populated by the CI if environment is set in .gitlab-ci.yml
         CI_REGISTRY,
@@ -89,6 +94,7 @@ public class GitlabEnvironment implements Environment {
         CI_REGISTRY_PASSWORD,
         CI_PROJECT_NAME,
         CI_PROJECT_NAMESPACE,
+        K8S_STORAGE_CLASS,
         //Set for the wdy namespace
         K8S_REGISTRY_USER_TOKEN,
         K8S_REGISTRY_USER_NAME,

@@ -30,4 +30,6 @@ public interface Environment {
     String getDomainBase();
 
     boolean needsSecret();
+
+    String getStorageClass();
 }
