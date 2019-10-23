@@ -76,6 +76,11 @@ public class GitlabEnvironment implements Environment {
         return get(Environment.AUTOCD_DOMAIN_BASE);
     }
 
+    @Override
+    public boolean needsSecret() {
+        return true;
+    }
+
     private enum Environment {
         //Populated by the CI if environment is set in .gitlab-ci.yml
         CI_REGISTRY,

@@ -75,6 +75,11 @@ public class GithubEnvironment implements Environment {
         return get(Environment.AUTOCD_DOMAIN_BASE);
     }
 
+    @Override
+    public boolean needsSecret() {
+        return Boolean.parseBoolean(get(Environment.K8S_SECRET_NEEDED));
+    }
+
     private enum Environment {
         //Populated by the CI if environment is set in .gitlab-ci.yml
         CI_REGISTRY,
@@ -82,7 +87,7 @@ public class GithubEnvironment implements Environment {
         CI_REGISTRY_EMAIL,
         CI_REGISTRY_PASSWORD,
         GITHUB_REPOSITORY,
-        //Set for the wdy namespace
+        K8S_SECRET_NEEDED,
         K8S_REGISTRY_USER_TOKEN,
         K8S_REGISTRY_USER_NAME,
         KUBE_URL,

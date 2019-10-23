@@ -28,4 +28,6 @@ public interface Environment {
     String getK8SUserName();
 
     String getDomainBase();
+
+    boolean needsSecret();
 }

@@ -80,7 +80,11 @@ public class K8sClient {
         var nameSpace = getNamespace();
 
         createNamespace(nameSpace);
-        addSecret();
+
+        if (environment.needsSecret()) {
+            addSecret();
+        }
+
         createStatefulSet(set);
         createService(service);
         createIngress(ingress);
@@ -237,7 +241,11 @@ public class K8sClient {
         cleanupPVC(nameSpace.getMetadata().getName(), claims);
 
         createNamespace(nameSpace);
-        addSecret();
+
+        if (environment.needsSecret()) {
+            addSecret();
+        }
+
         createClaims(claims);
         createDeployment(deployment);
         createService(service);
