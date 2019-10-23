@@ -28,7 +28,6 @@ public class Docker {
             config = DefaultDockerClientConfig
                     .createDefaultConfigBuilder()
                     .withRegistryUrl(reg)
-                    .withRegistryEmail(environment.getRegistryEMail())
                     .withRegistryUsername(environment.getRegistryUser())
                     .withRegistryPassword(environment.getRegistryPassword())
                     .build();

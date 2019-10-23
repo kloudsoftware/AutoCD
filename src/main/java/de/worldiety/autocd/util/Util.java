@@ -25,7 +25,7 @@ public class Util {
                 buildType +
                 "-" +
                 hash +
-                CLOUDIETY_DOMAIN;
+                environment.getDomainBase();
     }
 
 
