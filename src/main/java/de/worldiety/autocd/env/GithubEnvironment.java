@@ -1,8 +1,7 @@
 package de.worldiety.autocd.env;
 
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.InputStream;
+import java.io.*;
+import java.util.Optional;
 
 public class GithubEnvironment implements Environment {
 
@@ -55,6 +54,11 @@ public class GithubEnvironment implements Environment {
     }
 
     @Override
+    public Optional<Reader> getK8SConfig() {
+        return Optional.of(new StringReader(get(Environment.KUBE_CONFIG)));
+    }
+
+    @Override
     public String getK8SUserToken() {
         return get(Environment.K8S_REGISTRY_USER_TOKEN);
     }
@@ -83,5 +87,6 @@ public class GithubEnvironment implements Environment {
         KUBE_URL,
         KUBE_CA_PEM_FILE,
         AUTOCD_DOMAIN_BASE,
+        KUBE_CONFIG
     }
 }

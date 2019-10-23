@@ -1,6 +1,8 @@
 package de.worldiety.autocd.env;
 
 import java.io.InputStream;
+import java.io.Reader;
+import java.util.Optional;
 
 public interface Environment {
     String getRegistryUrl();
@@ -18,6 +20,8 @@ public interface Environment {
     String getK8SUrl();
 
     InputStream getK8SCACert();
+
+    Optional<Reader> getK8SConfig();
 
     String getK8SUserToken();
 

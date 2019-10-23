@@ -55,7 +55,22 @@ public class Main {
     public static void main(String[] args) throws IOException {
         var environment = getEnv();
         ApiClient client;
-        client = Config.fromToken(environment.getK8SUrl(), environment.getK8SUserToken()).setSslCaCert(environment.getK8SCACert());
+        client = environment.getK8SConfig().map(it -> {
+            try {
+                return Config.fromConfig(it);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            return null;
+        }).orElse(Config.fromToken(environment.getK8SUrl(),
+                environment.getK8SUserToken()).setSslCaCert(environment.getK8SCACert()));
+
+        if (client == null) {
+            log.error("Could not initialize kubernetes client, check config file");
+            System.exit(-1);
+        }
+
         Configuration.setDefaultApiClient(client);
 
         String name = "autocd.json";

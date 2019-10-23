@@ -3,6 +3,8 @@ package de.worldiety.autocd.env;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
+import java.io.Reader;
+import java.util.Optional;
 
 public class GitlabEnvironment implements Environment {
 
@@ -52,6 +54,11 @@ public class GitlabEnvironment implements Environment {
         } catch (FileNotFoundException e) {
             return null;
         }
+    }
+
+    @Override
+    public Optional<Reader> getK8SConfig() {
+        return Optional.empty();
     }
 
     @Override
