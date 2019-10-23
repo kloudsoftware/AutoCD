@@ -1,6 +1,7 @@
 package de.worldiety.autocd.util;
 
 import com.google.gson.annotations.SerializedName;
+
 import java.util.Map;
 
 public class Dockerconfig {

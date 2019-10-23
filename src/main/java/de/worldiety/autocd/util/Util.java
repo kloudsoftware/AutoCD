@@ -1,7 +1,9 @@
 package de.worldiety.autocd.util;
 
 import de.worldiety.autocd.docker.Docker;
+import de.worldiety.autocd.env.Environment;
 import de.worldiety.autocd.persistence.AutoCD;
+
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -11,14 +13,14 @@ import java.util.Objects;
 public class Util {
     public static final String CLOUDIETY_DOMAIN = ".cloudiety.de";
 
-    public static String buildSubdomain(String buildType, String hash) {
-        if (isLocal()) {
+    public static String buildSubdomain(Environment environment, String buildType, String hash) {
+        if (isLocal(environment)) {
             return "local-test" + CLOUDIETY_DOMAIN;
         }
 
-        return System.getenv(Environment.CI_PROJECT_NAME.toString()) +
+        return environment.getProjectName() +
                 "-" +
-                System.getenv(Environment.CI_PROJECT_NAMESPACE.toString()).replaceAll("/", "--") +
+                environment.getProjectNamespace().replaceAll("/", "--") +
                 "-" +
                 buildType +
                 "-" +
@@ -27,14 +29,14 @@ public class Util {
     }
 
 
-    public static boolean isLocal() {
-        var reg = System.getenv(Environment.CI_REGISTRY.toString());
+    public static boolean isLocal(Environment environment) {
+        var reg = environment.getRegistryUrl();
         return reg == null;
     }
 
 
-    public static void pushDockerAndSetPath(File dockerfile, AutoCD autoCD, String buildType) {
-        var dockerClient = new Docker();
+    public static void pushDockerAndSetPath(Environment environment, File dockerfile, AutoCD autoCD, String buildType) {
+        var dockerClient = new Docker(environment);
         var tag = dockerClient.buildAndPushImageFromFile(dockerfile, buildType);
         autoCD.setRegistryImagePath(tag);
     }

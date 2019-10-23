@@ -7,27 +7,30 @@ import com.github.dockerjava.core.DefaultDockerClientConfig;
 import com.github.dockerjava.core.DockerClientBuilder;
 import com.github.dockerjava.core.command.BuildImageResultCallback;
 import com.github.dockerjava.core.command.PushImageResultCallback;
-import de.worldiety.autocd.util.Environment;
-import java.io.File;
-import java.util.Set;
+import de.worldiety.autocd.env.Environment;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
+import java.util.Set;
+
 public class Docker {
     private static final Logger log = LoggerFactory.getLogger(Docker.class);
     private DockerClient client;
+    private Environment environment;
 
-    public Docker() {
-        var reg = System.getenv(Environment.CI_REGISTRY.toString());
+    public Docker(Environment environment) {
+        this.environment = environment;
+        var reg = environment.getRegistryUrl();
         DefaultDockerClientConfig config;
         if (reg != null) {
             config = DefaultDockerClientConfig
                     .createDefaultConfigBuilder()
                     .withRegistryUrl(reg)
-                    .withRegistryEmail(System.getenv(Environment.CI_REGISTRY_EMAIL.toString()))
-                    .withRegistryUsername(System.getenv(Environment.CI_REGISTRY_USER.toString()))
-                    .withRegistryPassword(System.getenv(Environment.CI_REGISTRY_PASSWORD.toString()))
+                    .withRegistryEmail(environment.getRegistryEMail())
+                    .withRegistryUsername(environment.getRegistryUser())
+                    .withRegistryPassword(environment.getRegistryPassword())
                     .build();
 
         } else {
@@ -37,9 +40,9 @@ public class Docker {
     }
 
     public String buildAndPushImageFromFile(File configFile, String buildType) {
-        var reg = System.getenv(Environment.CI_REGISTRY.toString());
-        var projectName = System.getenv(Environment.CI_PROJECT_NAME.toString());
-        var nameSpace = System.getenv(Environment.CI_PROJECT_NAMESPACE.toString());
+        var reg = environment.getRegistryUrl();
+        var projectName = environment.getProjectName();
+        var nameSpace = environment.getProjectNamespace();
 
         reg = reg == null ? "default" : reg;
         projectName = projectName == null ? "default" : projectName;

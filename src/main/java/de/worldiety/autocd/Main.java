@@ -2,11 +2,13 @@ package de.worldiety.autocd;
 
 import com.google.gson.Gson;
 import de.worldiety.autocd.docker.DockerfileHandler;
+import de.worldiety.autocd.env.Environment;
+import de.worldiety.autocd.env.GithubEnvironment;
+import de.worldiety.autocd.env.GitlabEnvironment;
 import de.worldiety.autocd.k8s.K8sClient;
 import de.worldiety.autocd.persistence.AutoCD;
 import de.worldiety.autocd.persistence.Volume;
 import de.worldiety.autocd.util.DockerconfigBuilder;
-import de.worldiety.autocd.util.Environment;
 import de.worldiety.autocd.util.FileType;
 import de.worldiety.autocd.util.Util;
 import io.kubernetes.client.ApiClient;
@@ -16,15 +18,12 @@ import io.kubernetes.client.custom.V1Patch;
 import io.kubernetes.client.util.ClientBuilder;
 import io.kubernetes.client.util.Config;
 import io.kubernetes.client.util.credentials.AccessTokenAuthentication;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
-import java.util.Map;
-import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.*;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 public class Main {
     private static final Logger log = LoggerFactory.getLogger(Main.class);
@@ -32,10 +31,31 @@ public class Main {
     private static final int KUBERNETES_TOKEN = 1;
     private static final int CA_CERTIFICATE = 2;
     private static final int BUILD_TYPE = 3;
+    private static final String ENVIRONMENT_SELECTION_VARIABLE = "AUTOCD_ENV";
+    private static Map<String, de.worldiety.autocd.env.Environment> environments = Map.of(
+            "GITHUB", new GithubEnvironment(),
+            "GITLAB", new GitlabEnvironment()
+    );
+
+    private static de.worldiety.autocd.env.Environment getEnv() {
+        var envString = System.getenv(ENVIRONMENT_SELECTION_VARIABLE);
+        if (null == envString) {
+            log.error("Could not read environment");
+            System.exit(-1);
+        }
+
+        if (!environments.containsKey(envString)) {
+            log.error("Envrionment unknown {}", envString);
+            System.exit(-1);
+        }
+
+        return environments.get(envString);
+    }
 
     public static void main(String[] args) throws IOException {
+        var environment = getEnv();
         ApiClient client;
-        client = Config.fromToken(args[KUBERNETES_URL], args[KUBERNETES_TOKEN]).setSslCaCert(new FileInputStream(args[CA_CERTIFICATE]));
+        client = Config.fromToken(environment.getK8SUrl(), environment.getK8SUserToken()).setSslCaCert(environment.getK8SCACert());
         Configuration.setDefaultApiClient(client);
 
         String name = "autocd.json";
@@ -51,9 +71,9 @@ public class Main {
                 .setSslCaCert(new FileInputStream(args[2]));
 
         var dockerCredentials = DockerconfigBuilder.getDockerConfig(
-                System.getenv(Environment.CI_REGISTRY.toString()),
-                System.getenv(Environment.K8S_REGISTRY_USER_NAME.toString()),
-                System.getenv(Environment.K8S_REGISTRY_USER_TOKEN.toString())
+                environment.getRegistryUrl(),
+                environment.getRegistryUser(),
+                environment.getRegistryPassword()
         );
         // Determines the build Type
         String buildType;
@@ -69,7 +89,7 @@ public class Main {
         //Creat the k8s client, CoreV1Api is needed for the client
         CoreV1Api patchApi = new CoreV1Api(strategicMergePatchClient);
         CoreV1Api api = new CoreV1Api();
-        var k8sClient = new K8sClient(api, finder, buildType, patchApi, dockerCredentials);
+        var k8sClient = new K8sClient(environment, api, finder, buildType, patchApi, dockerCredentials);
 
 
         /* This method checks for amy images which are referred in the main autoCD object
@@ -89,14 +109,14 @@ public class Main {
 
             if (containsInvalidImages) {
                 oldAutoCD.getOtherImages().forEach(image -> {
-                    setServiceNameForOtherImages(oldAutoCD, image);
-                    removeWithDependencies(image, k8sClient);
+                    setServiceNameForOtherImages(environment, oldAutoCD, image);
+                    removeWithDependencies(environment, image, k8sClient);
                 });
             }
         }
 
-        populateRegistryImagePath(autoCD, buildType, finder);
-        populateSubdomain(autoCD, buildType, autoCD.getSubdomains());
+        populateRegistryImagePath(environment, autoCD, buildType, finder);
+        populateSubdomain(environment, autoCD, buildType, autoCD.getSubdomains());
         populateContainerPort(autoCD, finder);
 
         /* Checks if the app should be hosted on the cluster, if one decides to abandon the app, this method will
@@ -105,13 +125,13 @@ public class Main {
 
         if (!autoCD.isShouldHost()) {
             log.info("Service is being removed from k8s.");
-            removeWithDependencies(autoCD, k8sClient);
+            removeWithDependencies(environment, autoCD, k8sClient);
 
             log.info("Not deploying to k8s because autocd is set to no hosting");
             return;
         }
 
-        deployWithDependencies(autoCD, k8sClient, buildType);
+        deployWithDependencies(environment, autoCD, k8sClient, buildType);
         log.info("Deployed to k8s with subdomain: " + autoCD.getSubdomain());
     }
 
@@ -136,16 +156,16 @@ public class Main {
      * @param buildType
      * @param finder
      */
-    private static void populateRegistryImagePath(AutoCD autoCD, String buildType, DockerfileHandler finder) {
+    private static void populateRegistryImagePath(Environment environment, AutoCD autoCD, String buildType, DockerfileHandler finder) {
         if (autoCD.getRegistryImagePath() == null || autoCD.getRegistryImagePath().isEmpty()) {
             var dockerFile = new File("Dockerfile");
 
             if (!dockerFile.exists()) {
                 finder.findDockerConfig().ifPresent(config -> {
-                    Util.pushDockerAndSetPath(config, autoCD, buildType);
+                    Util.pushDockerAndSetPath(environment, config, autoCD, buildType);
                 });
             } else {
-                Util.pushDockerAndSetPath(dockerFile.getAbsoluteFile(), autoCD, buildType);
+                Util.pushDockerAndSetPath(environment, dockerFile.getAbsoluteFile(), autoCD, buildType);
             }
         }
     }
@@ -180,13 +200,13 @@ public class Main {
      * @param buildType
      * @param subdomains
      */
-    private static void populateSubdomain(AutoCD autoCD, String buildType, Map<String, String> subdomains) {
+    private static void populateSubdomain(Environment environment, AutoCD autoCD, String buildType, Map<String, String> subdomains) {
         if (autoCD.getSubdomains() != null && subdomains.keySet().size() != 0) {
             autoCD.setSubdomain(autoCD.getSubdomains().get(buildType));
         }
 
         if (autoCD.getSubdomain() == null || autoCD.getSubdomain().isEmpty()) {
-            autoCD.setSubdomain(Util.buildSubdomain(buildType, Util.hash(autoCD.getIdentifierRegistryImagePath()).substring(0, 5)));
+            autoCD.setSubdomain(Util.buildSubdomain(environment, buildType, Util.hash(autoCD.getIdentifierRegistryImagePath()).substring(0, 5)));
         }
     }
 
@@ -198,12 +218,12 @@ public class Main {
      * @param autoCD
      * @param k8sClient
      */
-    private static void removeWithDependencies(AutoCD autoCD, K8sClient k8sClient) {
+    private static void removeWithDependencies(Environment environment, AutoCD autoCD, K8sClient k8sClient) {
         if (!autoCD.getOtherImages().isEmpty()) {
             autoCD.getOtherImages().forEach(config -> {
-                setServiceNameForOtherImages(autoCD, config);
+                setServiceNameForOtherImages(environment, autoCD, config);
                 if (!config.getOtherImages().isEmpty()) {
-                    removeWithDependencies(config, k8sClient);
+                    removeWithDependencies(environment, config, k8sClient);
                 }
             });
         }
@@ -217,10 +237,10 @@ public class Main {
      * @param main
      * @param other
      */
-    private static void setServiceNameForOtherImages(AutoCD main, AutoCD other) {
+    private static void setServiceNameForOtherImages(Environment environment, AutoCD main, AutoCD other) {
         if (other.getServiceName() == null) {
             other.setServiceName(Util.hash(
-                    System.getenv(Environment.CI_PROJECT_NAME.toString()) + main.getIdentifierRegistryImagePath()).substring(0, 20)
+                    environment.getProjectName() + main.getIdentifierRegistryImagePath()).substring(0, 20)
             );
         }
     }
@@ -232,16 +252,16 @@ public class Main {
      * @param k8sClient
      * @param buildType
      */
-    private static void deployWithDependencies(AutoCD autoCD, K8sClient k8sClient, String buildType) {
+    private static void deployWithDependencies(Environment environment, AutoCD autoCD, K8sClient k8sClient, String buildType) {
         validateConfig(autoCD);
         if (!autoCD.getOtherImages().isEmpty()) {
             autoCD.getOtherImages().forEach(config -> {
-                populateSubdomain(config, buildType, autoCD.getSubdomains());
+                populateSubdomain(environment, config, buildType, autoCD.getSubdomains());
 
                 if (!config.getOtherImages().isEmpty()) {
-                    deployWithDependencies(config, k8sClient, buildType);
+                    deployWithDependencies(environment, config, k8sClient, buildType);
                 }
-                setServiceNameForOtherImages(autoCD, config);
+                setServiceNameForOtherImages(environment, autoCD, config);
                 k8sClient.deployToK8s(config);
             });
         }

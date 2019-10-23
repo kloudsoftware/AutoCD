@@ -1,14 +1,11 @@
 package de.worldiety.autocd.k8s;
 
-import static de.worldiety.autocd.util.Util.hash;
-import static de.worldiety.autocd.util.Util.isLocal;
-
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import de.worldiety.autocd.docker.DockerfileHandler;
+import de.worldiety.autocd.env.Environment;
 import de.worldiety.autocd.persistence.AutoCD;
 import de.worldiety.autocd.persistence.Volume;
-import de.worldiety.autocd.util.Environment;
 import de.worldiety.autocd.util.FileType;
 import de.worldiety.autocd.util.Util;
 import io.kubernetes.client.ApiException;
@@ -18,52 +15,21 @@ import io.kubernetes.client.apis.ExtensionsV1beta1Api;
 import io.kubernetes.client.custom.IntOrString;
 import io.kubernetes.client.custom.Quantity;
 import io.kubernetes.client.custom.V1Patch;
-import io.kubernetes.client.models.ExtensionsV1beta1Deployment;
-import io.kubernetes.client.models.ExtensionsV1beta1DeploymentSpec;
-import io.kubernetes.client.models.ExtensionsV1beta1HTTPIngressPathBuilder;
-import io.kubernetes.client.models.ExtensionsV1beta1HTTPIngressRuleValueBuilder;
-import io.kubernetes.client.models.ExtensionsV1beta1Ingress;
-import io.kubernetes.client.models.ExtensionsV1beta1IngressBackendBuilder;
-import io.kubernetes.client.models.ExtensionsV1beta1IngressRuleBuilder;
-import io.kubernetes.client.models.ExtensionsV1beta1IngressSpecBuilder;
-import io.kubernetes.client.models.V1Container;
-import io.kubernetes.client.models.V1ContainerBuilder;
-import io.kubernetes.client.models.V1ContainerPort;
-import io.kubernetes.client.models.V1EnvVar;
-import io.kubernetes.client.models.V1EnvVarBuilder;
-import io.kubernetes.client.models.V1LabelSelector;
-import io.kubernetes.client.models.V1LocalObjectReference;
-import io.kubernetes.client.models.V1Namespace;
-import io.kubernetes.client.models.V1ObjectMeta;
-import io.kubernetes.client.models.V1ObjectMetaBuilder;
-import io.kubernetes.client.models.V1PersistentVolume;
-import io.kubernetes.client.models.V1PersistentVolumeClaim;
-import io.kubernetes.client.models.V1PersistentVolumeClaimSpec;
-import io.kubernetes.client.models.V1PersistentVolumeClaimSpecBuilder;
-import io.kubernetes.client.models.V1PersistentVolumeClaimVolumeSource;
-import io.kubernetes.client.models.V1PersistentVolumeList;
-import io.kubernetes.client.models.V1PodSpec;
-import io.kubernetes.client.models.V1PodTemplateSpec;
-import io.kubernetes.client.models.V1ResourceRequirementsBuilder;
-import io.kubernetes.client.models.V1SecretBuilder;
-import io.kubernetes.client.models.V1Service;
-import io.kubernetes.client.models.V1ServicePort;
-import io.kubernetes.client.models.V1ServiceSpec;
-import io.kubernetes.client.models.V1StatefulSet;
-import io.kubernetes.client.models.V1StatefulSetSpec;
-import io.kubernetes.client.models.V1Volume;
-import io.kubernetes.client.models.V1VolumeMount;
-import io.kubernetes.client.models.V1VolumeMountBuilder;
+import io.kubernetes.client.models.*;
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-import org.jetbrains.annotations.Contract;
-import org.jetbrains.annotations.NotNull;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import static de.worldiety.autocd.util.Util.hash;
+import static de.worldiety.autocd.util.Util.isLocal;
 
 public class K8sClient {
     private static final Logger log = LoggerFactory.getLogger(K8sClient.class);
@@ -75,9 +41,11 @@ public class K8sClient {
     private final String rawBuildType;
     private final CoreV1Api patchApi;
     private final String dockerCredentials;
+    private final Environment environment;
 
     @Contract(pure = true)
-    public K8sClient(CoreV1Api api, DockerfileHandler finder, String hyphenedBuildType, CoreV1Api patchApi, String dockerCredentials) {
+    public K8sClient(Environment env, CoreV1Api api, DockerfileHandler finder, String hyphenedBuildType, CoreV1Api patchApi, String dockerCredentials) {
+        this.environment = env;
         this.api = api;
         this.finder = finder;
         this.hyphenedBuildType = "-" + hyphenedBuildType;
@@ -147,7 +115,7 @@ public class K8sClient {
 
     private V1StatefulSet getStatefulSet(AutoCD autoCD) {
         var meta = getNamespacedMeta();
-        var projName = System.getenv(Environment.CI_PROJECT_NAME.toString());
+        var projName = environment.getProjectName();
         meta.setName(Util.hash(getNamespaceString() + autoCD.getIdentifierRegistryImagePath() + projName).substring(0, 20));
         var labels = Map.of("k8s-app", getK8sApp(autoCD), "serviceName", getCleanServiceNameLabel(autoCD));
         meta.setLabels(labels);
@@ -664,7 +632,7 @@ public class K8sClient {
             return autoCD.getRegistryImagePath().replaceAll("registry\\.worldiety\\.net", "");
         }
 
-        return System.getenv(Environment.CI_PROJECT_NAME.toString());
+        return environment.getProjectName();
     }
 
     @NotNull
@@ -699,7 +667,7 @@ public class K8sClient {
     @NotNull
     private ExtensionsV1beta1Deployment getDeployment(@NotNull AutoCD autoCD) {
         var meta = getNamespacedMeta();
-        var projName = System.getenv(Environment.CI_PROJECT_NAME.toString());
+        var projName = environment.getProjectName();
         meta.setName(Util.hash(getNamespaceString() + autoCD.getIdentifierRegistryImagePath() + projName));
         var labels = Map.of("k8s-app", getK8sApp(autoCD));
         meta.setLabels(labels);
@@ -846,11 +814,11 @@ public class K8sClient {
 
     @NotNull
     private String getName() {
-        if (isLocal()) {
+        if (isLocal(environment)) {
             return "local-default-name";
         }
 
-        return System.getenv(Environment.CI_PROJECT_NAME.toString()) + hyphenedBuildType;
+        return environment.getProjectName() + hyphenedBuildType;
     }
 
     @NotNull
@@ -870,8 +838,8 @@ public class K8sClient {
     private String getNamespaceString() {
         var nameSpaceName = "local-default";
 
-        if (!isLocal()) {
-            nameSpaceName = System.getenv(Environment.CI_PROJECT_NAMESPACE.toString());
+        if (!isLocal(environment)) {
+            nameSpaceName = environment.getProjectNamespace();
             nameSpaceName = nameSpaceName.replaceAll("/", "-");
         }
 

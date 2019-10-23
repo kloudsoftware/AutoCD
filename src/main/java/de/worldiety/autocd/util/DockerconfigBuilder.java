@@ -2,6 +2,7 @@ package de.worldiety.autocd.util;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+
 import java.util.Base64;
 import java.util.Map;
 

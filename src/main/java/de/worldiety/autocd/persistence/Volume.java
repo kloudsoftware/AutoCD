@@ -1,7 +1,8 @@
 package de.worldiety.autocd.persistence;
 
-import java.util.Objects;
 import org.jetbrains.annotations.Contract;
+
+import java.util.Objects;
 
 public class Volume {
     private String volumeMount;
