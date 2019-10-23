@@ -5,9 +5,9 @@ import org.jetbrains.annotations.Contract;
 public enum FileType {
     JAVA("java", "openjdk-12-builder", "openjdk-12-prod", "RUN ./gradlew build\n"),
     GO("go", "go-1.13-builder", "go-1.13-prod", "RUN go build -o app . \n"),
-    VUE("vue", "vue-builder", "vue-prod", "RUN npm run build\n"),
+    VUE("vue", "node-builder", "nginx-prod", "RUN npm run build\n"),
     NUXT("vue", "nuxt-builder", "nuxt-prod", "RUN npm i && npm run build"),
-    EISEN("eisen", "vue-builder", "vue-prod", "RUN npm run build\n"),
+    EISEN("eisen", "node-builder", "nginx-prod", "RUN npm run build\n"),
     OTHER("other");
 
     private final String name;
