@@ -13,6 +13,8 @@ public interface Environment {
 
     String getRegistryPassword();
 
+    Optional<String> getDockerConfig();
+
     String getProjectName();
 
     String getProjectNamespace();

@@ -22,7 +22,10 @@ import io.kubernetes.client.util.credentials.AccessTokenAuthentication;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -109,7 +112,7 @@ public class Main {
                 .build();
 
         if (environment.getK8SConfig().isEmpty()) {
-                strategicMergePatchClient.setSslCaCert(environment.getK8SCACert());
+            strategicMergePatchClient.setSslCaCert(environment.getK8SCACert());
         }
 
         var dockerCredentials = DockerconfigBuilder.getDockerConfig(
@@ -180,7 +183,7 @@ public class Main {
      * @param finder
      */
     private static void populateContainerPort(AutoCD autoCD, DockerfileHandler finder) {
-        if (autoCD.getContainerPort() == 8080 && finder.getFileType().equals(FileType.VUE)) {
+        if (autoCD.getContainerPort() == 8080 && (finder.getFileType().equals(FileType.VUE) || finder.getFileType().equals(FileType.EISEN))) {
             autoCD.setContainerPort(80);
         }
     }

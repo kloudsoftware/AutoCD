@@ -33,6 +33,11 @@ public class GitlabEnvironment implements Environment {
     }
 
     @Override
+    public Optional<String> getDockerConfig() {
+        return Optional.empty();
+    }
+
+    @Override
     public String getProjectName() {
         return get(Environment.CI_PROJECT_NAME);
     }

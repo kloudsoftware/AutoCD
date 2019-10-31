@@ -30,6 +30,11 @@ public class GithubEnvironment implements Environment {
     }
 
     @Override
+    public Optional<String> getDockerConfig() {
+        return Optional.of(get(Environment.DOCKERCONFIG));
+    }
+
+    @Override
     public String getProjectName() {
         var split = get(Environment.GITHUB_REPOSITORY).split("/");
         return split[split.length - 1];
@@ -106,6 +111,7 @@ public class GithubEnvironment implements Environment {
         KUBE_CA_PEM_FILE,
         AUTOCD_DOMAIN_BASE,
         KUBE_CONFIG,
+        DOCKERCONFIG,
         BUILD_TYPE
     }
 }

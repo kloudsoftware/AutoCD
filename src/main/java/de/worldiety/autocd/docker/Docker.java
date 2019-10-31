@@ -24,14 +24,13 @@ public class Docker {
         this.environment = environment;
         var reg = environment.getRegistryUrl();
         DefaultDockerClientConfig config;
+        log.info(environment.getRegistryPassword());
         if (reg != null) {
-            config = DefaultDockerClientConfig
-                    .createDefaultConfigBuilder()
+            config = DefaultDockerClientConfig.createDefaultConfigBuilder()
                     .withRegistryUrl(reg)
                     .withRegistryUsername(environment.getRegistryUser())
                     .withRegistryPassword(environment.getRegistryPassword())
                     .build();
-
         } else {
             config = DefaultDockerClientConfig.createDefaultConfigBuilder().build();
         }
