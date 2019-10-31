@@ -120,22 +120,14 @@ public class Main {
                 environment.getRegistryUser(),
                 environment.getRegistryPassword()
         );
-        // Determines the build Type
         String buildType = environment.getBuildType().orElse("dev");
 
         DockerfileHandler finder = new DockerfileHandler(".");
 
 
-        //Creat the k8s client, CoreV1Api is needed for the client
         CoreV1Api patchApi = new CoreV1Api(strategicMergePatchClient);
         CoreV1Api api = new CoreV1Api();
         var k8sClient = new K8sClient(environment, api, finder, buildType, patchApi, dockerCredentials);
-
-
-        /* This method checks for amy images which are referred in the main autoCD object
-           If invalid images are found, they will be removed from the cluster.
-           An image is invalid if there is no registry image path containing the name of the targeted image.
-        */
 
         if (oldAutoCD != null) {
             var validImageNames = autoCD.getOtherImages().stream()
@@ -158,10 +150,6 @@ public class Main {
         populateRegistryImagePath(environment, autoCD, buildType, finder);
         populateSubdomain(environment, autoCD, buildType, autoCD.getSubdomains());
         populateContainerPort(autoCD, finder);
-
-        /* Checks if the app should be hosted on the cluster, if one decides to abandon the app, this method will
-            remove it if the tag 'isShouldHost' is set correctly (false)
-        */
 
         if (!autoCD.isShouldHost()) {
             log.info("Service is being removed from k8s.");
@@ -309,11 +297,6 @@ public class Main {
         k8sClient.deployToK8s(autoCD);
     }
 
-    /**
-     * Note that autoCD does not support retaining volumes if the replica set is greater than 1.
-     *
-     * @param autoCD
-     */
     private static void validateConfig(AutoCD autoCD) {
         if (autoCD.getReplicas() > 1) {
             if (autoCD.getVolumes().stream().anyMatch(Volume::isRetainVolume)) {
