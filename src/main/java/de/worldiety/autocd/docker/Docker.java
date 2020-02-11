@@ -69,6 +69,7 @@ public class Docker {
 
         client.buildImageCmd(configFile)
                 .withTags(Set.of(tag))
+                .withBuildArg("buildType", buildType)
                 .exec(callback)
                 .awaitImageId();
 
