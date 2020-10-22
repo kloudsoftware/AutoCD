@@ -11,9 +11,9 @@ import de.worldiety.autocd.persistence.Volume;
 import de.worldiety.autocd.util.DockerconfigBuilder;
 import de.worldiety.autocd.util.FileType;
 import de.worldiety.autocd.util.Util;
-import io.kubernetes.client.ApiClient;
-import io.kubernetes.client.Configuration;
-import io.kubernetes.client.apis.CoreV1Api;
+import io.kubernetes.client.openapi.ApiClient;
+import io.kubernetes.client.openapi.Configuration;
+import io.kubernetes.client.openapi.apis.CoreV1Api;
 import io.kubernetes.client.custom.V1Patch;
 import io.kubernetes.client.util.ClientBuilder;
 import io.kubernetes.client.util.Config;
@@ -108,7 +108,7 @@ public class Main {
 
         ApiClient strategicMergePatchClient = builder
                 .setVerifyingSsl(true)
-                .setOverridePatchFormat(V1Patch.PATCH_FORMAT_JSON_PATCH)
+                //.setOverridePatchFormat(V1Patch.PATCH_FORMAT_JSON_PATCH)
                 .build();
 
         if (environment.getK8SConfig().isEmpty()) {

@@ -96,6 +96,11 @@ public class GitlabEnvironment implements Environment {
         return Optional.ofNullable(get(Environment.BUILD_TYPE));
     }
 
+    @Override
+    public String getOrgName() {
+        return null;
+    }
+
     private enum Environment {
         //Populated by the CI if environment is set in .gitlab-ci.yml
         CI_REGISTRY,

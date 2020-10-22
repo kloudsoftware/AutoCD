@@ -10,6 +10,11 @@ public class DockerconfigBuilder {
     private static final Gson GSON = new GsonBuilder().disableHtmlEscaping().create();
 
     public static String getDockerConfig(String registry, String username, String token) {
+
+        if(registry == null) {
+            return null;
+        }
+
         var auth = String.format("%s:%s", username, token);
         var authEncoded = Base64.getEncoder().encodeToString(auth.getBytes());
         var authItems = Map.of(registry, new Dockerconfig.AuthItem(authEncoded));

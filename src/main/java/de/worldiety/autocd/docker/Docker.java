@@ -17,8 +17,8 @@ import java.util.Set;
 
 public class Docker {
     private static final Logger log = LoggerFactory.getLogger(Docker.class);
-    private DockerClient client;
-    private Environment environment;
+    private final DockerClient client;
+    private final Environment environment;
 
     public Docker(Environment environment) {
         this.environment = environment;
@@ -40,7 +40,7 @@ public class Docker {
     public String buildAndPushImageFromFile(File configFile, String buildType) {
         var reg = environment.getRegistryUrl();
         var projectName = environment.getProjectName();
-        var nameSpace = environment.getProjectNamespace();
+        var nameSpace = environment.getOrgName();
 
         reg = reg == null ? "default" : reg;
         projectName = projectName == null ? "default" : projectName;

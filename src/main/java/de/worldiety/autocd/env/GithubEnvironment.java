@@ -96,6 +96,11 @@ public class GithubEnvironment implements Environment {
         return Optional.ofNullable(get(Environment.BUILD_TYPE));
     }
 
+    @Override
+    public String getOrgName() {
+        return get(Environment.ORG_NAME);
+    }
+
     private enum Environment {
         //Populated by the CI if environment is set in .gitlab-ci.yml
         CI_REGISTRY,
@@ -112,6 +117,7 @@ public class GithubEnvironment implements Environment {
         AUTOCD_DOMAIN_BASE,
         KUBE_CONFIG,
         DOCKERCONFIG,
-        BUILD_TYPE
+        BUILD_TYPE,
+        ORG_NAME
     }
 }

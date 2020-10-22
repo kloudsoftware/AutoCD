@@ -36,4 +36,6 @@ public interface Environment {
     String getStorageClass();
 
     Optional<String> getBuildType();
+
+    String getOrgName();
 }
